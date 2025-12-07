@@ -2,7 +2,7 @@
 
 Script bash para gerenciar HD externo e containers Docker em servidor caseiro.
 
-## 🚀 Instalação
+
 
 ```bash
 # Copiar script para local acessível
