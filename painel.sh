@@ -148,7 +148,7 @@ stop_docker_services() {
     if [ -n "$service" ]; then
         echo "⏹️  Parando serviço específico: $service"
         echo ""
-        docker compose stop "$service" 2>&1
+        docker compose stop "$service"
         log_message "Serviço parado: $service"
     else
         # Para todos os serviços
@@ -157,12 +157,12 @@ stop_docker_services() {
             echo ""
             for service_item in "${DOCKER_SERVICES[@]}"; do
                 echo "⏹️  Parando: $service_item"
-                docker compose stop "$service_item" 2>&1
+                docker compose stop "$service_item"
                 log_message "Serviço parado: $service_item"
             done
         else
             echo "🛑 Parando todos os containers..."
-            docker compose stop 2>&1
+            docker compose stop
             log_message "Todos os serviços parados"
         fi
     fi
@@ -222,10 +222,10 @@ start_docker_services() {
         echo ""
         
         if [ "$no_deps" = true ]; then
-            docker compose up -d --no-deps "$service" 2>&1
+            docker compose up -d --no-deps "$service"
             log_message "Serviço iniciado: $service (sem dependências)"
         else
-            docker compose up -d "$service" 2>&1
+            docker compose up -d "$service"
             log_message "Serviço iniciado: $service"
         fi
     else
@@ -235,12 +235,12 @@ start_docker_services() {
             echo ""
             for service_item in "${DOCKER_SERVICES[@]}"; do
                 echo "▶️  Iniciando: $service_item"
-                docker compose up -d "$service_item" 2>&1
+                docker compose up -d "$service_item"
                 log_message "Serviço iniciado: $service_item"
             done
         else
             echo "🚀 Iniciando todos os containers..."
-            docker compose up -d 2>&1
+            docker compose up -d
             log_message "Todos os serviços iniciados"
         fi
     fi
@@ -281,16 +281,16 @@ restart_docker_services() {
         
         if [ "$clean_mode" = true ]; then
             # Para, remove e inicia
-            docker compose stop "$service" 2>&1
+            docker compose stop "$service"
             log_message "Serviço parado para limpeza: $service"
             sleep 1
             clean_old_containers "$service"
             echo ""
-            docker compose up -d "$service" 2>&1
+            docker compose up -d "$service"
             log_message "Serviço reiniciado após limpeza: $service"
         else
             # Restart simples
-            docker compose restart "$service" 2>&1
+            docker compose restart "$service"
             log_message "Serviço reiniciado: $service"
         fi
     else
