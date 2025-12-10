@@ -148,7 +148,10 @@ stop_docker_services() {
     if [ -n "$service" ]; then
         echo "⏹️  Parando serviço específico: $service"
         echo ""
-        docker compose stop "$service"
+        
+        # Usa docker stop diretamente (mais confiável que compose stop)
+        docker stop "$service" --timeout 10
+        
         log_message "Serviço parado: $service"
     else
         # Para todos os serviços
@@ -157,12 +160,12 @@ stop_docker_services() {
             echo ""
             for service_item in "${DOCKER_SERVICES[@]}"; do
                 echo "⏹️  Parando: $service_item"
-                docker compose stop "$service_item"
+                docker stop "$service_item" --timeout 10
                 log_message "Serviço parado: $service_item"
             done
         else
             echo "🛑 Parando todos os containers..."
-            docker compose stop
+            docker stop $(docker ps -q) --timeout 10
             log_message "Todos os serviços parados"
         fi
     fi
