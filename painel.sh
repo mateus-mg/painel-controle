@@ -34,7 +34,7 @@ get_device_by_uuid() {
     return 1
 }
 
-# Tratamento de sinais para cleanup seguro
+# Tratamento de sinais para cleanup seguro (usado no keepalive)
 cleanup_on_exit() {
     echo ""
     echo "🛑 Sinal de interrupção recebido..."
@@ -42,8 +42,6 @@ cleanup_on_exit() {
     echo "✅ Keepalive finalizado com segurança"
     exit 0
 }
-
-trap cleanup_on_exit SIGINT SIGTERM
 
 # Função de log com rotação automática
 log_message() {
@@ -219,10 +217,22 @@ start_docker_services() {
     # Se um serviço específico foi informado
     if [ -n "$service" ]; then
         echo "▶️  Iniciando serviço específico: $service"
+        
+        # Detecta automaticamente se serviço usa 'build:' e força --no-deps
+        if grep -q "^  $service:" "$DOCKER_COMPOSE_FILE" && \
+           grep -A 5 "^  $service:" "$DOCKER_COMPOSE_FILE" | grep -q "build:"; then
+            echo "🔨 Serviço usa build, forçando --no-deps"
+            no_deps=true
+        fi
+        
         if [ "$no_deps" = true ]; then
             echo "⚠️  Modo: Ignorando dependências (--no-deps)"
         fi
         echo ""
+        
+        # Remove containers órfãos automaticamente (force remove)
+        echo "🧹 Removendo containers órfãos..."
+        docker rm -f "$service" 2>/dev/null || true
         
         if [ "$no_deps" = true ]; then
             docker compose up -d --no-deps "$service"
@@ -236,6 +246,13 @@ start_docker_services() {
         if load_docker_services; then
             echo "🚀 Iniciando todos os serviços: ${DOCKER_SERVICES[*]}"
             echo ""
+            
+            # Remove containers órfãos de todos os serviços (force)
+            echo "🧹 Removendo containers órfãos..."
+            for service_item in "${DOCKER_SERVICES[@]}"; do
+                docker rm -f "$service_item" 2>/dev/null || true
+            done
+            
             for service_item in "${DOCKER_SERVICES[@]}"; do
                 echo "▶️  Iniciando: $service_item"
                 docker compose up -d "$service_item"
@@ -243,6 +260,7 @@ start_docker_services() {
             done
         else
             echo "🚀 Iniciando todos os containers..."
+            docker compose down 2>/dev/null || true
             docker compose up -d
             log_message "Todos os serviços iniciados"
         fi
@@ -410,6 +428,9 @@ unmount_hd_forced() {
 
 # ✅ FUNÇÃO DE KEEPALIVE MELHORADA
 keepalive_hd_optimized() {
+    # Ativa trap apenas dentro do keepalive
+    trap cleanup_on_exit SIGINT SIGTERM
+    
     echo "🔋 Iniciando modo keepalive..."
     echo "📝 Monitorando HD e containers Docker a cada 30 segundos"
     echo "💡 Pressione Ctrl+C para parar"
